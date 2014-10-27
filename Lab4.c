@@ -70,22 +70,21 @@ void main(void) {
     printf("Embedded Control Drive Motor Control\r\n");
     // Initialize motor in neutral and wait for 1 second
     MOTOR_PW = PW_NEUT;
-	motorPW = 0xFFFF-MOTOR_PW;
+    motorPW = 0xFFFF - MOTOR_PW;
     PCA0CPL2 = motorPW;
-    PCA0CPH2 = motorPW>>8;
-	printf("Pulse Width = %d\r\n",MOTOR_PW);
+    PCA0CPH2 = motorPW >> 8;
+    printf("Pulse Width = %d\r\n", MOTOR_PW);
     c = 0;
-    while (c < 50);								//wait 1 second in neutral
-	printf("end wait \r\n");
-    
-    
-    
+    while (c < 50); //wait 1 second in neutral
+    printf("end wait \r\n");
+
+
+
     //Main Functionality
     while (1) {
         if (!SS1) { // If the slide switch is active, set PW to center
             PW = PWCENTER;
             PCA0CP0 = 0xFFFF - PW; // Update comparator with new PW value
-            while (!SS1); // Wait...
         } else if (take_heading) { // Otherwise take a new heading
             reading = Read_Compass(); // Get current heading
             printf("%d\n\r", reading);
@@ -181,16 +180,14 @@ unsigned char read_ranger(void) {
 //
 
 void Port_Init() {
-    P1MDOUT |= 0x04; // set output pin P1.2 for push-pull mode
+    P1MDOUT |= 0x05; // set output pin P1.2 and P1.0 for push-pull mode (CEX2 and CEX0)
     XBR0 = 0x27; // configure crossbar with UART, SPI, SMBus, and CEX channels 
 
-    P3MDOUT &= ~0x40; // Set P3.6 to an input
+    P3MDOUT &= ~0xC0; // Set P3.6 and 3.7 to inputs
     P3 |= 0x40;
 
     P0MDOUT &= ~0xC0; //(00XX XXXX) Set P0.6 and P0.7 Open Drain (Input)
     P0 |= 0xC0; //(11XX XXXX) Set P0.6 and P0.7 to High-Impedence Mode
-    P1MDOUT |= 0x01; //set output pin for CEX0 at P1.0 to push pull
-    P3MDOUT &= ~0x80; // Set input for slide switch on P3.7 Open Drain
     P3 |= ~0x80;
 }
 
@@ -212,8 +209,8 @@ void PCA_Init(void) {
 
 
 
-    PCA0MD |= 0x01; //Enable PCA overflow interrupt (bit 0)	
-    PCA0MD &= ~0x0E; //Timer uses SYSCLK/12 (Bits 1-3)
+    //PCA0MD |= 0x01; //Enable PCA overflow interrupt (bit 0)	
+    //PCA0MD &= ~0x0E; //Timer uses SYSCLK/12 (Bits 1-3)
     PCA0CPM0 = 0xC2; //Use 16bit counter (bit 7)
 }
 
@@ -259,28 +256,19 @@ void SMB_Init(void) {
 void PCA_ISR(void) __interrupt 9 {//                                                          needs work
     if (CF) { //If an interrupt has occured
         interrupts++;
-        if (interrupts >= 2) { //If two interrupts have occured
-            interrupts = 0; //Reset interrupts
-            take_heading = 1; //It is appropriate to take a reading
-        }
-        CF = 0; //Clear Interrupt Flag
-        PCA0 = 0x7000; //Jump timer ahead for given period
-    
-
-
-
-
-
-
-        CF = 0; // clear overflow flag
-        PCA0L = (unsigned char) 28672; // set low byte for 20ms period pulse
-        PCA0H = 28672 >> 8; // set high byte for 20 ms period pulse
         c++; // counter for initial wait to initialize motor
         rWait++; // counter to set 80ms flag
         if (rWait >= 4) {
             getRange = 1; // 80ms flag
             rWait = 0; // Reset counter
         }
+        //Portion for compass 
+        if (interrupts >= 2) { //If two interrupts have occured
+            interrupts = 0; //Reset interrupts
+            take_heading = 1; //It is appropriate to take a reading
+        }
+        CF = 0; //Clear Interrupt Flag
+        PCA0 = 28672; //Jump timer ahead for given period
     }
     PCA0CN &= 0xC0; // Handle other PCA interrupts
 }
