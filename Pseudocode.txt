@@ -1,0 +1,60 @@
+Mark Blanco
+Brad Jewett
+Litec Section 02
+Side B Seat 27
+Lab 4 Pseudocode
+(Use sensor readings from compass to update steering servo angle)
+
+#import necessary header files
+initialize necessary counters and other global variables
+unsigned int desired_heading = 900
+corrective_factor  = 0.417  	// Proportionality constant for Steering_Servo calculations 
+pw_center = 2905
+pw_min = 2385
+pw_max = 3315
+
+main()
+	run default setup for c8051
+	run init functions for hardware (timer, pwm, etc)
+	while(true)
+		if  steering slide switch is active:
+			pw = center_pw		// Update current pulse width value to center
+			update CCM registers to reflect new pwm value
+		else if 40 milliseconds have passed:
+			reset the counter
+			call and store readCompass()
+			display heading on lcd display
+			Steering_Servo(heading)	// Update servo position based on current heading
+			update CCM registers to reflect new pwm value
+		if ranging slide switch is active:
+			motor off
+		else:
+			set motor pwm  to value from find_range()
+			update pwm comparator
+		if keys pressed on keypad:
+			begin reading key presses and update settings as needed
+		read battery level and display to LCD using ADC
+		
+
+Steering_Servo(current_heading)
+error = desired_heading - current_heading
+if error is greater than 1800:			// Corrections to base algorithm to ensure 
+	error  =  -( 3600 % error )			// most efficient corrective direction and 
+else if error is less than -1800:			// magnitude
+	error = 3600 % abs(error)
+temp_pw = corrective_factor*error + center_pw
+make sure temp_pw is between pw_min and pw_max (correct if needed)
+set pw = temp_pw		// Update pw to new pw value
+
+readCompass()		// return compass heading as unsigned integer
+read heading from compass (two bytes of data)
+return unsigned int containing the two bytes combined
+
+find_range()
+	get range from rangefinder
+	return range
+
+Timer_ISR()
+	increment count and apply any needed timer operations such as setting 40 millisecond flag to high
+	
+
