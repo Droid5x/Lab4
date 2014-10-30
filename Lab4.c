@@ -10,10 +10,11 @@
 #include <i2c.h>
 
 #define PROPORTION 0.417
-//#define HEADING 900
 #define MOTOR_PW_MIN 2030
 #define MOTOR_PW_MAX 3500
 #define MOTOR_PW_NEUT 2760
+#define R_ADDR 0xE0
+#define C_ADDR 0xC0
 
 
 //-----------------------------------------------------------------------------
@@ -50,7 +51,6 @@ unsigned char getRange = 1;
 unsigned char rWait = 0;
 unsigned int range_val = 0;
 unsigned char Data[2];
-unsigned char addr = 0xE0; // the address of the ranger is 0xE0
 unsigned int motor_PW;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
@@ -104,7 +104,7 @@ void main(void) {
 
             // Start a new ping
             Data[0] = 0x51; // write 0x51 to reg 0 of the ranger:
-            i2c_write_data(addr, 0, Data, 1); // write one byte of data to reg 0 at addr
+            i2c_write_data(R_ADDR, 0, Data, 1); // write one byte of data to reg 0 at R_ADDR
         }
 
         if (!SS_range) Drive_Motor(range_val);
@@ -119,14 +119,13 @@ void main(void) {
 //
 
 unsigned int Read_Compass() {
-    unsigned char addr = 0xC0; // Address the compass heading will be written to
-    unsigned char Data[2]; // Data array to store heading data
+    unsigned char c_Data[2]; // c_Data array to store heading data
     unsigned int heading; // Variable to store heading data
-    i2c_read_data(addr, 2, Data, 2); // Read data from compass registers, store it in Data buffer
-    heading = (((unsigned int) Data[0] << 8) | Data[1]); //Take high data byte, convert to int, 
+    i2c_read_data(C_ADDR, 2, c_Data, 2); // Read data from compass registers, store it in c_Data buffer
+    heading = (((unsigned int) c_Data[0] << 8) | c_Data[1]); //Take high c_data byte, convert to int, 
     //shift left 8 bits, and copy lower compass byte to first half of int
     take_heading = 0;
-    return heading; // Return data heading between 0 and 3599 
+    return heading; // Return c_data heading between 0 and 3599 
 }
 
 
@@ -169,7 +168,7 @@ unsigned char read_ranger(void) {
     unsigned char slave_reg = 2; //start at register 2
     unsigned char num_bytes = 2; //read 2 bytes
 
-    i2c_read_data(addr, slave_reg, Data, num_bytes); // read two bytes, starting at reg 2
+    i2c_read_data(R_ADDR, slave_reg, Data, num_bytes); // read two bytes, starting at reg 2
     range = (((unsigned int) Data[0] << 8) | Data[1]); // Store high and low bytes of Data in variable range
     return range;
 }
