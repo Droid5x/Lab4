@@ -40,7 +40,7 @@ unsigned int servo_PW_CENTER = 2905; // Center PW value
 unsigned int servo_PW_MIN = 2385; // Minimum left PW value
 unsigned int servo_PW_MAX = 3315; // Maximum right PW value
 unsigned int servo_PW = 2905; // Start PW at center
-unsigned int heading = 900;//set initial heading to 90 degrees
+unsigned int desired_heading = 900;//set initial heading to 90 degrees
 unsigned char final = 0;
 float proportion = 0.417;
 __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
@@ -86,7 +86,7 @@ void main(void) {
     //Main Functionality
     while (1) {
         if (!SS_steer) { // If the slide switch is active, set PW to center
-            servo_PW_CENTER;
+            servo_PW = servo_PW_CENTER;
             PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         } else if (take_heading) { // Otherwise take a new heading
             reading = Read_Compass(); // Get current heading
@@ -181,19 +181,13 @@ unsigned char read_ranger(void) {
 //
 
 void Port_Init() {
+ 	XBR0 = 0x27; // configure crossbar with UART, SPI, SMBus, and CEX channels 
     P1MDOUT |= 0x05; // set output pin P1.2 and P1.0 for push-pull mode (CEX2 and CEX0)
-    XBR0 = 0x27; // configure crossbar with UART, SPI, SMBus, and CEX channels 
 
     P3MDOUT &= ~0xC0; // Set P3.6 and 3.7 to inputs
     P3 |= 0xC0;
-
-    P0MDOUT &= ~0xC0; //(00XX XXXX) Set P0.6 and P0.7 Open Drain (Input)
-    P0 |= 0xC0; //(11XX XXXX) Set P0.6 and P0.7 to High-Impedence Mode
-    //P3 |= ~0x80;
     
-    
-    
-     // Port 1
+     // Port 1 ADC
     P1MDIN &= ~0x80;
     P1MDOUT &= ~0x80;
     P1 |= 0x80;
@@ -317,7 +311,7 @@ void PCA_ISR(void) __interrupt 9 {//                                            
 void Steering_Servo(unsigned int current_heading) {
     signed int error = 0;
     //signed int temp;
-    error = heading - current_heading; // Calculate signed error
+    error = desired_heading - current_heading; // Calculate signed error
     if (error > 1800) { // If the error is greater than 1800
         error = 3600 % error; // or less than -1800, then the 
         error *= -1; // conjugate angle needs to be generated
