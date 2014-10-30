@@ -9,7 +9,6 @@
 #include <c8051_SDCC.h>
 #include <i2c.h>
 
-#define PROPORTION 0.417
 #define MOTOR_PW_MIN 2030
 #define MOTOR_PW_MAX 3500
 #define MOTOR_PW_NEUT 2760
@@ -43,6 +42,7 @@ unsigned int servo_PW_MAX = 3315; // Maximum right PW value
 unsigned int servo_PW = 2905; // Start PW at center
 unsigned int heading = 900;//set initial heading to 90 degrees
 unsigned char final = 0;
+float proportion = 0.417;
 __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
 
 unsigned int MOTOR_PW = 0;
@@ -51,7 +51,7 @@ unsigned char getRange = 1;
 unsigned char rWait = 0;
 unsigned int range_val = 0;
 unsigned char Data[2];
-unsigned int motor_PW;
+unsigned int motorPW;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
 
@@ -73,9 +73,9 @@ void main(void) {
     printf("Embedded Control Drive Motor Control\r\n");
     // Initialize motor in neutral and wait for 1 second
     MOTOR_PW = MOTOR_PW_NEUT;
-    motor_PW = 0xFFFF - MOTOR_PW;
-    PCA0CPL2 = motor_PW;
-    PCA0CPH2 = motor_PW >> 8;
+    motorPW = 0xFFFF - MOTOR_PW;
+    PCA0CPL2 = motorPW;
+    PCA0CPH2 = motorPW >> 8;
     printf("Pulse Width = %d\r\n", MOTOR_PW);
     c = 0;
     while (c < 50); //wait 1 second in neutral
@@ -138,7 +138,6 @@ unsigned int Read_Compass() {
 //
 
 void Drive_Motor(unsigned int input) {
-    unsigned int motorPW; // Declare local variable
 
     if (input <= 10) MOTOR_PW = MOTOR_PW_MAX; // Motor at full forward
 
@@ -326,10 +325,10 @@ void Steering_Servo(unsigned int current_heading) {
         error = 3600 % abs(error); // error
     }
     printf("\t%d\n\r", error); // Commented out unless testing
-    servo_PW = PROPORTION * servo_PW_CENTER; // Update PW based on error
+    servo_PW = proportion * servo_PW_CENTER; // Update PW based on error
 
-    if (servo_PW > MOTOR_PW_MAX) { // check if pulsewidth maximum exceeded
-        servo_PW = MOTOR_PW_MAX; // set PW to a maximum value
+    if (servo_PW > servo_PW_MAX) { // check if pulsewidth maximum exceeded
+        servo_PW = servo_PW_MAX; // set PW to a maximum value
     } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
         servo_PW = servo_PW_MIN; // set SERVO_PW to a minimum value
     }
