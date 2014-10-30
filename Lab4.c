@@ -26,6 +26,8 @@ unsigned int Read_Compass();
 void Steering_Servo(unsigned int current_heading);
 void Interrupt_Init(void);
 void SMB_Init(void);
+void ADC_Init(void); // Initialize A to D Conversion
+unsigned char read_AD_input(void);
 unsigned char read_ranger(void);
 
 //-----------------------------------------------------------------------------
@@ -189,8 +191,43 @@ void Port_Init() {
     P0MDOUT &= ~0xC0; //(00XX XXXX) Set P0.6 and P0.7 Open Drain (Input)
     P0 |= 0xC0; //(11XX XXXX) Set P0.6 and P0.7 to High-Impedence Mode
     P3 |= ~0x80;
+    
+    
+    
+     // Port 1
+    P1MDIN &= ~0x80;
+    P1MDOUT &= ~0x80;
+    P1 |= 0x80;
 }
 
+//-----------------------------------------------------------------------------
+// ADC_Init
+//-----------------------------------------------------------------------------
+//
+// initilize analog to digitial conversion
+//
+void ADC_Init(void) {
+    REF0CN = 0x03; // Use internal reference voltage (2.4V)
+    ADC1CN = 0x80; // Enable A/D conversion
+    ADC1CF &= 0xFC; // Reset last two bits to 0
+    ADC1CF |= 0x01; // Gain set to 1.0
+}
+
+//-----------------------------------------------------------------------------
+// read_AD_input
+//-----------------------------------------------------------------------------
+//
+// read analog input
+//
+unsigned char read_AD_input(void) {
+    AMX1SL = 7; // Set pin 7 as the analog input
+    ADC1CN &= ~0x20; // Clear 'conversion complete' flag
+    ADC1CN |= 0x10; // Initiate A/D conversion
+
+    while ((ADC1CN & 0x20) == 0x00); // Wait for conversion to complete
+
+    return ADC1; // Return digital conversion value
+}
 
 //-----------------------------------------------------------------------------
 // PCA_Init
