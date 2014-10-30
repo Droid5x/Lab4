@@ -1,0 +1,2 @@
++ C:\PROGRA~1\SDCC\bin\sdcpp.exe -nostdinc -Wall -I"C:\LITEC\Lab4" -obj-ext=.rel -D__SDCC_MODEL_SMALL -DSDCC_MODEL_SMALL -D__SDCC_FLOAT_REENT -DSDCC_FLOAT_REENT -D__SDCC=3_4_0 -DSDCC=340 -D__SDCC_REVISION=8981 -DSDCC_REVISION=8981 -D__SDCC_mcs51 -DSDCC_mcs51 -D__mcs51 -D__STDC_NO_COMPLEX__ -D__STDC_NO_THREADS__ -D__STDC_NO_ATOMICS__ -D__STDC_NO_VLA__ -isystem "C:\Program Files\SDCC\bin\..\include\mcs51" -isystem "C:\Program Files\SDCC\bin\..\include"  "C:\LITEC\Lab4\Lab4.c" 
++ C:\PROGRA~1\SDCC\bin\sdas8051.exe -plosgffwy "Lab4.rel" "Lab4".asm

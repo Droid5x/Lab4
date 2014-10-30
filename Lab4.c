@@ -10,10 +10,10 @@
 #include <i2c.h>
 
 #define PROPORTION 0.417
-#define HEADING 900
-#define PW_MIN 2030
-#define PW_MAX 3500
-#define PW_NEUT 2760
+//#define HEADING 900
+#define MOTOR_PW_MIN 2030
+#define MOTOR_PW_MAX 3500
+#define MOTOR_PW_NEUT 2760
 
 
 //-----------------------------------------------------------------------------
@@ -36,12 +36,13 @@ unsigned char read_ranger(void);
 unsigned char interrupts;
 unsigned char take_heading;
 unsigned int reading;
-unsigned int PWCENTER = 2905; // Center PW value
-unsigned int PWMIN = 2385; // Minimum left PW value
-unsigned int PWMAX = 3315; // Maximum right PW value
-unsigned int PW = 2905; // Start PW at center
+unsigned int servo_PW_CENTER = 2905; // Center PW value
+unsigned int servo_PW_MIN = 2385; // Minimum left PW value
+unsigned int servo_PW_MAX = 3315; // Maximum right PW value
+unsigned int servo_PW = 2905; // Start PW at center
+unsigned int heading = 900;//set initial heading to 90 degrees
 unsigned char final = 0;
-__sbit __at 0xB7 SS1; // Slide switch input pin at P3.7
+__sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
 
 unsigned int MOTOR_PW = 0;
 unsigned int c = 0;
@@ -50,9 +51,9 @@ unsigned char rWait = 0;
 unsigned int range_val = 0;
 unsigned char Data[2];
 unsigned char addr = 0xE0; // the address of the ranger is 0xE0
-unsigned int motorPW;
+unsigned int motor_PW;
 
-__sbit __at 0xB6 SS0; // Assign P3.6 to SS (Slide Switch)
+__sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
 
 //-----------------------------------------------------------------------------
 // Main Function
@@ -71,10 +72,10 @@ void main(void) {
     //print beginning message
     printf("Embedded Control Drive Motor Control\r\n");
     // Initialize motor in neutral and wait for 1 second
-    MOTOR_PW = PW_NEUT;
-    motorPW = 0xFFFF - MOTOR_PW;
-    PCA0CPL2 = motorPW;
-    PCA0CPH2 = motorPW >> 8;
+    MOTOR_PW = MOTOR_PW_NEUT;
+    motor_PW = 0xFFFF - MOTOR_PW;
+    PCA0CPL2 = motor_PW;
+    PCA0CPH2 = motor_PW >> 8;
     printf("Pulse Width = %d\r\n", MOTOR_PW);
     c = 0;
     while (c < 50); //wait 1 second in neutral
@@ -84,14 +85,14 @@ void main(void) {
 
     //Main Functionality
     while (1) {
-        if (!SS1) { // If the slide switch is active, set PW to center
-            PW = PWCENTER;
-            PCA0CP0 = 0xFFFF - PW; // Update comparator with new PW value
+        if (!SS_steer) { // If the slide switch is active, set PW to center
+            servo_PW_CENTER;
+            PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         } else if (take_heading) { // Otherwise take a new heading
             reading = Read_Compass(); // Get current heading
             printf("%d\n\r", reading);
             Steering_Servo(reading); // Change PW based on current heading
-            PCA0CP0 = 0xFFFF - PW; // Update comparator with new PW value
+            PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         }
 
 
@@ -106,7 +107,7 @@ void main(void) {
             i2c_write_data(addr, 0, Data, 1); // write one byte of data to reg 0 at addr
         }
 
-        if (SS0) Drive_Motor(range_val);
+        if (!SS_range) Drive_Motor(range_val);
         else Drive_Motor(45); // Hold the motor in neutral if the slide switch is off
     }
 }
@@ -140,15 +141,15 @@ unsigned int Read_Compass() {
 void Drive_Motor(unsigned int input) {
     unsigned int motorPW; // Declare local variable
 
-    if (input <= 10) MOTOR_PW = PW_MAX; // Motor at full forward
+    if (input <= 10) MOTOR_PW = MOTOR_PW_MAX; // Motor at full forward
 
-    else if (input >= 90) MOTOR_PW = PW_MIN; // Motor in full reverse
+    else if (input >= 90) MOTOR_PW = MOTOR_PW_MIN; // Motor in full reverse
 
-    else if (input >= 40 && input <= 50) MOTOR_PW = PW_NEUT; // Motor in neutral
+    else if (input >= 40 && input <= 50) MOTOR_PW = MOTOR_PW_NEUT; // Motor in neutral
 
-    else if (input > 10 && input < 40) MOTOR_PW = ((PW_NEUT - PW_MAX) / 30) * (input - 10) + PW_MAX;
+    else if (input > 10 && input < 40) MOTOR_PW = ((MOTOR_PW_NEUT - MOTOR_PW_MAX) / 30) * (input - 10) + MOTOR_PW_MAX;
 
-    else if (input > 50 && input < 90) MOTOR_PW = ((PW_MIN - PW_NEUT) / 40) * (input - 50) + PW_NEUT;
+    else if (input > 50 && input < 90) MOTOR_PW = ((MOTOR_PW_MIN - MOTOR_PW_NEUT) / 40) * (input - 50) + MOTOR_PW_NEUT;
 
     //printf("Pulse Width = %d\r\n",MOTOR_PW);
     motorPW = 0xFFFF - MOTOR_PW;
@@ -186,11 +187,11 @@ void Port_Init() {
     XBR0 = 0x27; // configure crossbar with UART, SPI, SMBus, and CEX channels 
 
     P3MDOUT &= ~0xC0; // Set P3.6 and 3.7 to inputs
-    P3 |= 0x40;
+    P3 |= 0xC0;
 
     P0MDOUT &= ~0xC0; //(00XX XXXX) Set P0.6 and P0.7 Open Drain (Input)
     P0 |= 0xC0; //(11XX XXXX) Set P0.6 and P0.7 to High-Impedence Mode
-    P3 |= ~0x80;
+    //P3 |= ~0x80;
     
     
     
@@ -213,7 +214,7 @@ void ADC_Init(void) {
     ADC1CF |= 0x01; // Gain set to 1.0
 }
 
-//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------j'
 // read_AD_input
 //-----------------------------------------------------------------------------
 //
@@ -318,7 +319,7 @@ void PCA_ISR(void) __interrupt 9 {//                                            
 void Steering_Servo(unsigned int current_heading) {
     signed int error = 0;
     //signed int temp;
-    error = HEADING - current_heading; // Calculate signed error
+    error = heading - current_heading; // Calculate signed error
     if (error > 1800) { // If the error is greater than 1800
         error = 3600 % error; // or less than -1800, then the 
         error *= -1; // conjugate angle needs to be generated
@@ -326,11 +327,11 @@ void Steering_Servo(unsigned int current_heading) {
         error = 3600 % abs(error); // error
     }
     printf("\t%d\n\r", error); // Commented out unless testing
-    PW = PROPORTION * error + PWCENTER; // Update PW based on error
+    servo_PW = PROPORTION * servo_PW_CENTER; // Update PW based on error
 
-    if (PW > PW_MAX) { // check if pulsewidth maximum exceeded
-        PW = PW_MAX; // set PW to a maximum value
-    } else if (PW < PWMIN) { // check if less than pulsewidth minimum
-        PW = PWMIN; // set SERVO_PW to a minimum value
+    if (servo_PW > MOTOR_PW_MAX) { // check if pulsewidth maximum exceeded
+        servo_PW = MOTOR_PW_MAX; // set PW to a maximum value
+    } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
+        servo_PW = servo_PW_MIN; // set SERVO_PW to a minimum value
     }
 }
