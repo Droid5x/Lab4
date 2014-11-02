@@ -43,6 +43,7 @@ unsigned int desired_heading = 900; //set initial heading to 90 degrees
 unsigned char final = 0;
 float proportion = 0.417;
 __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
+char voltage;
 
 unsigned int MOTOR_PW = 0;
 unsigned int c = 0;
@@ -64,6 +65,7 @@ void main(void) {
     Port_Init();
     PCA_Init();
     SMB_Init();
+	ADC_Init();
     Interrupt_Init();
     printf("Starting\n\r");
 
@@ -79,6 +81,11 @@ void main(void) {
     while (c < 50); //wait 1 second in neutral
     printf("end wait \r\n");
 
+	// Print the battery voltage (from AD conversion);
+	voltage = read_AD_input();
+	//voltage /= 256;
+	//voltage *= 15.6;
+	printf("Battery voltage is: %.2f", voltage);
 
 
     //Main Functionality
