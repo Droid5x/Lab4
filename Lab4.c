@@ -35,7 +35,6 @@ unsigned char read_ranger(void);
 //-----------------------------------------------------------------------------
 unsigned char interrupts;
 unsigned char take_heading;
-unsigned int reading;
 unsigned int servo_PW_CENTER = 2905; // Center PW value
 unsigned int servo_PW_MIN = 2385; // Minimum left PW value
 unsigned int servo_PW_MAX = 3315; // Maximum right PW value
@@ -48,7 +47,6 @@ __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
 unsigned int MOTOR_PW = 0;
 unsigned int c = 0;
 unsigned char getRange = 1;
-unsigned char rWait = 0;
 unsigned int range_val = 0;
 unsigned char Data[2];
 unsigned int motorPW;
@@ -85,13 +83,11 @@ void main(void) {
 
     //Main Functionality
     while (1) {
-        if (!SS_steer) { // If the slide switch is active, set PW to center
+        if (SS_steer) { // If the slide switch is active, set PW to center
             servo_PW = servo_PW_CENTER;
             PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         } else if (take_heading) { // Otherwise take a new heading
-            reading = Read_Compass(); // Get current heading
-            printf("%d\n\r", reading);
-            Steering_Servo(reading); // Change PW based on current heading
+            Steering_Servo(Read_Compass()); // Change PW based on current heading
             PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         }
 
@@ -99,16 +95,16 @@ void main(void) {
         if (getRange) {
             getRange = 0; // Reset 80 ms flag
             range_val = read_ranger(); // Read the distance from the ranger
-            printf("Range:			%d cm \r\n", range_val);
-            printf("Pulse Width:	%d \r\n", MOTOR_PW);
+            //printf("Range:			%d cm \r\n", range_val);
+            //printf("Pulse Width:	%d \r\n", MOTOR_PW);
 
             // Start a new ping
             Data[0] = 0x51; // write 0x51 to reg 0 of the ranger:
             i2c_write_data(R_ADDR, 0, Data, 1); // write one byte of data to reg 0 at R_ADDR
         }
 
-        if (!SS_range) Drive_Motor(range_val);
-        else Drive_Motor(45); // Hold the motor in neutral if the slide switch is off
+        if (SS_range) Drive_Motor(45); // Hold the motor in neutral if the slide switch is active
+        else Drive_Motor(range_val);
     }
 }
 
@@ -275,24 +271,21 @@ void SMB_Init(void) {
 // Interrupt Service Routine for Programmable Counter Array Overflow Interrupt
 //
 
-void PCA_ISR(void) __interrupt 9 {//                                                          needs work
-    if (CF) { //If an interrupt has occured
+void PCA_ISR(void) __interrupt 9 {
+    if (CF) { 					//If an interrupt has occured
         interrupts++;
-        c++; // counter for initial wait to initialize motor
-        rWait++; // counter to set 80ms flag
-        if (rWait >= 4) {
-            getRange = 1; // 80ms flag
-            rWait = 0; // Reset counter
-        }
-        //Portion for compass 
-        if (interrupts >= 2) { //If two interrupts have occured
-            interrupts = 0; //Reset interrupts
-            take_heading = 1; //It is appropriate to take a reading
-        }
-        CF = 0; //Clear Interrupt Flag
-        PCA0 = 28672; //Jump timer ahead for given period
+        c++; 					// counter for initial wait to initialize motor
+        if (interrupts >= 4) {
+            getRange = 1; 		// 80ms flag
+            interrupts = 0; 	// Reset counter
+			if (interrupts%2 == 0){
+				take_heading = 1; //It is appropriate to take a reading
+			}
+		}
+        CF = 0; 				//Clear Interrupt Flag
+        PCA0 = 28672; 			//Jump timer ahead for given period
     }
-    PCA0CN &= 0xC0; // Handle other PCA interrupts
+    PCA0CN &= 0xC0; 			// Handle other PCA interrupts
 }
 
 //-----------------------------------------------------------------------------
@@ -302,20 +295,20 @@ void PCA_ISR(void) __interrupt 9 {//                                            
 
 void Steering_Servo(unsigned int current_heading) {
     signed int error = 0;
-    //signed int temp;
-    error = desired_heading - current_heading; // Calculate signed error
-    if (error > 1800) { // If the error is greater than 1800
-        error = 3600 % error; // or less than -1800, then the 
-        error *= -1; // conjugate angle needs to be generated
-    } else if (error < -1800) { // with opposite sign from the original
-        error = 3600 % abs(error); // error
+    error = desired_heading - current_heading; 	// Calculate signed error
+    if (error > 1800) { 						// If the error is greater than 1800
+        error = 3600 % error; 					// or less than -1800, then the 
+        error *= -1; 							// conjugate angle needs to be generated
+    } else if (error < -1800) { 				// with opposite sign from the original
+        error = 3600 % abs(error); 				// error
     }
-    printf("\t%d\n\r", error); // Commented out unless testing
-    servo_PW = proportion * servo_PW_CENTER; // Update PW based on error
+	//printf("%d\n\r",current_heading);
+    //printf("\t%d\n\r", error); 					// Commented out unless testing
+    servo_PW = proportion * error + servo_PW_CENTER; // Update PW based on error
 
-    if (servo_PW > servo_PW_MAX) { // check if pulsewidth maximum exceeded
-        servo_PW = servo_PW_MAX; // set PW to a maximum value
-    } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
-        servo_PW = servo_PW_MIN; // set SERVO_PW to a minimum value
+    if (servo_PW > servo_PW_MAX) { 				// check if pulsewidth maximum exceeded
+        servo_PW = servo_PW_MAX; 				// set PW to a maximum value
+    } else if (servo_PW < servo_PW_MIN) { 		// check if less than pulsewidth minimum
+        servo_PW = servo_PW_MIN; 				// set SERVO_PW to a minimum value
     }
 }
