@@ -40,7 +40,7 @@ unsigned int servo_PW_CENTER = 2905; // Center PW value
 unsigned int servo_PW_MIN = 2385; // Minimum left PW value
 unsigned int servo_PW_MAX = 3315; // Maximum right PW value
 unsigned int servo_PW = 2905; // Start PW at center
-unsigned int desired_heading = 900;//set initial heading to 90 degrees
+unsigned int desired_heading = 900; //set initial heading to 90 degrees
 unsigned char final = 0;
 float proportion = 0.417;
 __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
@@ -181,16 +181,17 @@ unsigned char read_ranger(void) {
 //
 
 void Port_Init() {
- 	XBR0 = 0x27; // configure crossbar with UART, SPI, SMBus, and CEX channels 
+    XBR0 = 0x27; // configure crossbar with UART, SPI, SMBus, and CEX channels 
     P1MDOUT |= 0x05; // set output pin P1.2 and P1.0 for push-pull mode (CEX2 and CEX0)
 
+    // Port 1 ADC
+    P1MDIN &= ~0x80; //set P1.7 to Analog input
+    P1MDOUT &= ~0x80; //set P1.7 to open drain mode
+    P1 |= 0x80; //set P1.7 to high impedance
+
     P3MDOUT &= ~0xC0; // Set P3.6 and 3.7 to inputs
-    P3 |= 0xC0;
-    
-     // Port 1 ADC
-    P1MDIN &= ~0x80;
-    P1MDOUT &= ~0x80;
-    P1 |= 0x80;
+    P3 |= 0xC0; //set P3.6 and 3.7 to high impedance
+
 }
 
 //-----------------------------------------------------------------------------
@@ -199,6 +200,7 @@ void Port_Init() {
 //
 // initilize analog to digitial conversion
 //
+
 void ADC_Init(void) {
     REF0CN = 0x03; // Use internal reference voltage (2.4V)
     ADC1CN = 0x80; // Enable A/D conversion
@@ -212,6 +214,7 @@ void ADC_Init(void) {
 //
 // read analog input
 //
+
 unsigned char read_AD_input(void) {
     AMX1SL = 7; // Set pin 7 as the analog input
     ADC1CN &= ~0x20; // Clear 'conversion complete' flag
@@ -230,18 +233,11 @@ unsigned char read_AD_input(void) {
 //
 
 void PCA_Init(void) {
-    // reference to the sample code in Example 4.5 - Pulse Width Modulation 
-    // implemented using the PCA (Programmable Counter Array, p. 50 in Lab Manual.
-    // Use a 16 bit = counter with SYSCLK/12.
-    PCA0MD = 0x81; // enable CF interupt, use SYSCLK/12
-    PCA0CPM2 = 0xC2; // select 16bit PWM, enable positive edge capture, enable pulse width modulation
+    PCA0MD = 0x81; // enable CF interrupt, use SYSCLK/12
+
     PCA0CN = 0x40; // enable PCA0 counter
-
-
-
-    //PCA0MD |= 0x01; //Enable PCA overflow interrupt (bit 0)	
-    //PCA0MD &= ~0x0E; //Timer uses SYSCLK/12 (Bits 1-3)
-    PCA0CPM0 = 0xC2; //Use 16bit counter (bit 7)
+    PCA0CPM2 = 0xC2; // select 16bit PWM, enable positive edge capture, enable pulse width modulation(ranger)
+    PCA0CPM0 = 0xC2; // select 16bit PWM, enable positive edge capture, enable pulse width modulation(compass)
 }
 
 //-----------------------------------------------------------------------------
@@ -266,11 +262,7 @@ void Interrupt_Init(void) {
 //
 
 void SMB_Init(void) {
-    SMB0CR = 0x93; //Configure SCL frequency
-    SMB0CN = 0x40; //Enable SMBus
-
-
-
+    SMB0CR = 0x93; //Configure SCL frequency to 100kHz
     ENSMB = 1; // Enable SMBus
 }
 
