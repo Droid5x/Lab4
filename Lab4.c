@@ -46,7 +46,7 @@ unsigned int servo_PW = 2905; // Start PW at center
 
 unsigned int desired_heading = 900; //set initial heading to 90 degrees
 
-unsigned int compass_val= 0;
+unsigned int compass_val;
 float compass_gain = 0.417;
 float voltage;
 
@@ -126,14 +126,24 @@ void main(void) {
         if (SS_range) Drive_Motor(0); // Hold the motor in neutral if the slide switch is active
         else Drive_Motor(speed);
 		if (c >= 50){
-			c = 0;
 			// Print the battery voltage (from AD conversion);
 			voltage = read_AD_input();
-			//voltage /= 256;
-			//voltage *= 15.6;
-			printf("Battery voltage is: %f\n\r", voltage);
+			voltage /= 256;
+			voltage *= 15.6;
+			printf_fast_f("Battery voltage is: %.2f\n\r", voltage);
+			Load_Menu();
+			c = 0;
 		}
-    }
+		while (SS_range && SS_steer){
+			Drive_Motor(0);
+			servo_PW = servo_PW_CENTER;
+            PCA0CP0 = 0xFFFF - servo_PW;
+			Check_Menu();
+			c = 0;
+			while(c < 5){}
+			c = 0;
+		}
+	}
 }
 
 
@@ -143,13 +153,13 @@ void main(void) {
 //
 
 unsigned int Read_Compass() {
-    unsigned char c_Data[2]; // c_Data array to store heading data
-    unsigned int heading; // Variable to store heading data
+    unsigned char c_Data[2]; 	// c_Data array to store heading data
+    unsigned int heading; 		// Variable to store heading data
     i2c_read_data(C_ADDR, 2, c_Data, 2); // Read data from compass registers, store it in c_Data buffer
     heading = (((unsigned int) c_Data[0] << 8) | c_Data[1]); //Take high c_data byte, convert to int, 
     //shift left 8 bits, and copy lower compass byte to first half of int
     take_heading = 0;
-    return heading; // Return c_data heading between 0 and 3599 
+    return heading; // Return C_Data heading between 0 and 3599 
 }
 
 
@@ -172,7 +182,7 @@ void Check_Menu() {
 	else if ((menu_input - '0') == 3) {			//If desired heading is selected
 		printf("Please choose an option: \n\r");
 		printf("1: 0 degrees\n\r2: 90 degrees\n\r3: 180 degrees\n\r4: 270 degrees\n\r5: Enter a value\n\r");	//Print menu on terminal output
-		lcd_print("1. 0 degrees\n\r2. 90 degrees\n\r3. 180 degrees\n\r4. 270 degrees	5. Enter a value");		//Print menu on 
+		lcd_print("1. 0 degrees\n2. 90 degrees\n3. 180 degrees\n4. 270 degrees	5. Enter a value");		//Print menu on 
 		menu_input = read_keypad();
 		while (menu_input == -1) menu_input = read_keypad();
 		if ((menu_input - '0') == 1) {			//For 0 degrees
@@ -199,10 +209,10 @@ void Check_Menu() {
 
 void Load_Menu(void){
 	lcd_clear();
-	lcd_print("1. Compass Gain Adjust");
-	lcd_print("2. Ranger Gain Adjust");
-	lcd_print("3. Desired Heading Adjust");
-	lcd_print("RNG: %d HDG: %d BAT:%d", range_val, compass_val, voltage);
+	lcd_print("1. Compass Gain\n");
+	lcd_print("2. Ranger Gain\n");
+	lcd_print("3. Heading Gain\n");
+	lcd_print("R:%dH:%dB:%d\n", range_val, compass_val, voltage);
 }
 
 
@@ -349,12 +359,12 @@ void PCA_ISR(void) __interrupt 9 {
     if (CF) { //If an interrupt has occured
         interrupts++;
         c++; // counter for initial wait to initialize motor
+		if (interrupts % 2 == 0) {
+       		take_heading = 1; //It is appropriate to take a reading
+        }
         if (interrupts >= 4) {
             getRange = 1; // 80ms flag
-            interrupts = 0; // Reset counter
-            if (interrupts % 2 == 0) {
-                take_heading = 1; //It is appropriate to take a reading
-            }
+			interrupts = 0; // Reset counter
         }
         CF = 0; //Clear Interrupt Flag
         PCA0 = 28672; //Jump timer ahead for given period
