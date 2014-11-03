@@ -29,6 +29,9 @@ void SMB_Init(void);
 void ADC_Init(void); // Initialize A to D Conversion
 unsigned char read_AD_input(void);
 unsigned char read_ranger(void);
+void Check_Menu(void);
+void Load_Menu(void);
+
 
 //-----------------------------------------------------------------------------
 // Global Variables
@@ -39,11 +42,11 @@ unsigned int servo_PW_CENTER = 2905; // Center PW value
 unsigned int servo_PW_MIN = 2385; // Minimum left PW value
 unsigned int servo_PW_MAX = 3315; // Maximum right PW value
 unsigned int servo_PW = 2905; // Start PW at center
+
 unsigned int desired_heading = 900; //set initial heading to 90 degrees
-unsigned char final = 0;
-float proportion = 0.417;
-__sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
-char voltage;
+unsigned int compass_val= 0;
+float compass_gain = 0.417;
+float voltage;
 
 unsigned int MOTOR_PW = 0;
 unsigned int c = 0;
@@ -53,6 +56,7 @@ unsigned char Data[2];
 unsigned int motorPW;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
+__sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
 
 //-----------------------------------------------------------------------------
 // Main Function
@@ -79,14 +83,8 @@ void main(void) {
     printf("Pulse Width = %d\r\n", MOTOR_PW);
     c = 0;
     while (c < 50); //wait 1 second in neutral
+	c = 0;
     printf("end wait \r\n");
-
-	// Print the battery voltage (from AD conversion);
-	voltage = read_AD_input();
-	//voltage /= 256;
-	//voltage *= 15.6;
-	printf("Battery voltage is: %.2f", voltage);
-
 
     //Main Functionality
     while (1) {
@@ -94,7 +92,8 @@ void main(void) {
             servo_PW = servo_PW_CENTER;
             PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         } else if (take_heading) { // Otherwise take a new heading
-            Steering_Servo(Read_Compass()); // Change PW based on current heading
+			compass_val = Read_Compass();
+            Steering_Servo(compass_val); // Change PW based on current heading
             PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
         }
 
@@ -112,6 +111,14 @@ void main(void) {
 
         if (SS_range) Drive_Motor(45); // Hold the motor in neutral if the slide switch is active
         else Drive_Motor(range_val);
+		if (c >= 50){
+			c = 0;
+			// Print the battery voltage (from AD conversion);
+			voltage = read_AD_input();
+			//voltage /= 256;
+			//voltage *= 15.6;
+			printf("Battery voltage is: %f\n\r", voltage);
+		}
     }
 }
 
@@ -130,6 +137,60 @@ unsigned int Read_Compass() {
     take_heading = 0;
     return heading; // Return c_data heading between 0 and 3599 
 }
+
+
+void Check_Menu() {
+	signed char menu_input = read_keypad();		//Determine pressed button on keypad (if any)
+	unsigned int keypad_input;
+
+	if ((menu_input - '0') == 1) {				//If compass gain is selected
+		printf("Please enter a 5 digit gain constant (of the form: xx.xxx) \n\r");
+		keypad_input = kpd_input(0);
+		compass_gain = keypad_input * 0.001;
+		Load_Menu();
+	}
+	else if ((menu_input - '0') == 2) {			//If ranger gain is selected
+		printf("Please enter a 5 digit gain constant (of the form: xx.xxx) \n\r");
+		keypad_input = kpd_input(0);
+		ranger_gain = keypad_input * 0.001;
+		Load_Menu();
+	}
+	else if ((menu_input - '0') == 3) {			//If desired heading is selected
+		printf("Please choose an option: \n\r");
+		printf("1: 0 degrees\n\r2: 90 degrees\n\r3: 180 degrees\n\r4: 270 degrees\n\r5: Enter a value\n\r");	//Print menu on terminal output
+		lcd_print("1. 0 degrees\n\r2. 90 degrees\n\r3. 180 degrees\n\r4. 270 degrees	5. Enter a value");		//Print menu on 
+		menu_input = read_keypad();
+		while (menu_input == -1) menu_input = read_keypad();
+		if ((menu_input - '0') == 1) {			//For 0 degrees
+			desired_heading = 0;
+		}
+		else if ((menu_input - '0') == 2) {		//For 90 degrees
+			desired_heading = 900;
+		}
+		else if ((menu_input - '0') == 3) {		//For 180 degrees
+			desired_heading = 1800;
+		}
+		else if ((menu_input - '0') == 4) {		//For 270 degrees
+			desired_heading = 2700;
+		}
+		else if ((menu_input - '0') == 5) {		//For enter own value
+			printf("Please enter a 5 digit compass heading (of the form: 0xxxx) \n\r");
+			keypad_input = kpd_input(0);
+			desired_heading = keypad_input%3600;
+		}
+		Load_Menu();
+	}
+}
+
+
+void Load_Menu(void){
+	lcd_clear();
+	lcd_print("1. Compass Gain Adjust");
+	lcd_print("2. Ranger Gain Adjust");
+	lcd_print("3. Desired Heading Adjust");
+	lcd_print("RNG: %d HDG: %d BAT:%d", range_val, compass_val, voltage);
+}
+
 
 
 //-----------------------------------------------------------------------------
@@ -311,7 +372,7 @@ void Steering_Servo(unsigned int current_heading) {
     }
 	//printf("%d\n\r",current_heading);
     //printf("\t%d\n\r", error); 					// Commented out unless testing
-    servo_PW = proportion * error + servo_PW_CENTER; // Update PW based on error
+    servo_PW = compass_gain * error + servo_PW_CENTER; // Update PW based on error
 
     if (servo_PW > servo_PW_MAX) { 				// check if pulsewidth maximum exceeded
         servo_PW = servo_PW_MAX; 				// set PW to a maximum value
