@@ -9,6 +9,7 @@
 #include <c8051_SDCC.h>
 #include <i2c.h>
 
+#define MAX_RANGE 60
 #define MOTOR_PW_MIN 2030
 #define MOTOR_PW_MAX 3500
 #define MOTOR_PW_NEUT 2760
@@ -44,6 +45,7 @@ unsigned int servo_PW_MAX = 3315; // Maximum right PW value
 unsigned int servo_PW = 2905; // Start PW at center
 
 unsigned int desired_heading = 900; //set initial heading to 90 degrees
+
 unsigned int compass_val= 0;
 float compass_gain = 0.417;
 float voltage;
@@ -54,6 +56,10 @@ unsigned char getRange = 1;
 unsigned int range_val = 0;
 unsigned char Data[2];
 unsigned int motorPW;
+
+float range_gain = 1.0;
+unsigned int range_adj;
+unsigned char speed = 0;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
 __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
@@ -69,18 +75,15 @@ void main(void) {
     Port_Init();
     PCA_Init();
     SMB_Init();
-	ADC_Init();
+    ADC_Init();
     Interrupt_Init();
     printf("Starting\n\r");
 
     //print beginning message
     printf("Embedded Control Drive Motor Control\r\n");
+    
     // Initialize motor in neutral and wait for 1 second
-    MOTOR_PW = MOTOR_PW_NEUT;
-    motorPW = 0xFFFF - MOTOR_PW;
-    PCA0CPL2 = motorPW;
-    PCA0CPH2 = motorPW >> 8;
-    printf("Pulse Width = %d\r\n", MOTOR_PW);
+    Drive_Motor(0);
     c = 0;
     while (c < 50); //wait 1 second in neutral
 	c = 0;
@@ -104,13 +107,24 @@ void main(void) {
             //printf("Range:			%d cm \r\n", range_val);
             //printf("Pulse Width:	%d \r\n", MOTOR_PW);
 
+
+            // range is the value from the ultrasonic ranger
+
+
+            if (range_val > MAX_RANGE) range_adj = 0; //no obstacle in range, no change
+            else range_adj = (int) (range_gain * (MAX_RANGE - range_val)); //find adjustment
+      
+
+            // compass_adj is the compass heading error multiplied by its error gain
+            //servo_PW = servo_PW_CENTER + compass_adj + range_adj; //use both to adjust steering
+
+
             // Start a new ping
             Data[0] = 0x51; // write 0x51 to reg 0 of the ranger:
             i2c_write_data(R_ADDR, 0, Data, 1); // write one byte of data to reg 0 at R_ADDR
         }
-
-        if (SS_range) Drive_Motor(45); // Hold the motor in neutral if the slide switch is active
-        else Drive_Motor(range_val);
+        if (SS_range) Drive_Motor(0); // Hold the motor in neutral if the slide switch is active
+        else Drive_Motor(speed);
 		if (c >= 50){
 			c = 0;
 			// Print the battery voltage (from AD conversion);
@@ -152,7 +166,7 @@ void Check_Menu() {
 	else if ((menu_input - '0') == 2) {			//If ranger gain is selected
 		printf("Please enter a 5 digit gain constant (of the form: xx.xxx) \n\r");
 		keypad_input = kpd_input(0);
-		ranger_gain = keypad_input * 0.001;
+		range_gain = keypad_input * 0.001;
 		Load_Menu();
 	}
 	else if ((menu_input - '0') == 3) {			//If desired heading is selected
@@ -203,15 +217,7 @@ void Load_Menu(void){
 
 void Drive_Motor(unsigned int input) {
 
-    if (input <= 10) MOTOR_PW = MOTOR_PW_MAX; // Motor at full forward
-
-    else if (input >= 90) MOTOR_PW = MOTOR_PW_MIN; // Motor in full reverse
-
-    else if (input >= 40 && input <= 50) MOTOR_PW = MOTOR_PW_NEUT; // Motor in neutral
-
-    else if (input > 10 && input < 40) MOTOR_PW = ((MOTOR_PW_NEUT - MOTOR_PW_MAX) / 30) * (input - 10) + MOTOR_PW_MAX;
-
-    else if (input > 50 && input < 90) MOTOR_PW = ((MOTOR_PW_MIN - MOTOR_PW_NEUT) / 40) * (input - 50) + MOTOR_PW_NEUT;
+    MOTOR_PW = ((MOTOR_PW_MAX - MOTOR_PW_NEUT) / 10) * (input) + MOTOR_PW_NEUT;
 
     //printf("Pulse Width = %d\r\n",MOTOR_PW);
     motorPW = 0xFFFF - MOTOR_PW;
@@ -340,20 +346,20 @@ void SMB_Init(void) {
 //
 
 void PCA_ISR(void) __interrupt 9 {
-    if (CF) { 					//If an interrupt has occured
+    if (CF) { //If an interrupt has occured
         interrupts++;
-        c++; 					// counter for initial wait to initialize motor
+        c++; // counter for initial wait to initialize motor
         if (interrupts >= 4) {
-            getRange = 1; 		// 80ms flag
-            interrupts = 0; 	// Reset counter
-			if (interrupts%2 == 0){
-				take_heading = 1; //It is appropriate to take a reading
-			}
-		}
-        CF = 0; 				//Clear Interrupt Flag
-        PCA0 = 28672; 			//Jump timer ahead for given period
+            getRange = 1; // 80ms flag
+            interrupts = 0; // Reset counter
+            if (interrupts % 2 == 0) {
+                take_heading = 1; //It is appropriate to take a reading
+            }
+        }
+        CF = 0; //Clear Interrupt Flag
+        PCA0 = 28672; //Jump timer ahead for given period
     }
-    PCA0CN &= 0xC0; 			// Handle other PCA interrupts
+    PCA0CN &= 0xC0; // Handle other PCA interrupts
 }
 
 //-----------------------------------------------------------------------------
@@ -363,20 +369,19 @@ void PCA_ISR(void) __interrupt 9 {
 
 void Steering_Servo(unsigned int current_heading) {
     signed int error = 0;
-    error = desired_heading - current_heading; 	// Calculate signed error
-    if (error > 1800) { 						// If the error is greater than 1800
-        error = 3600 % error; 					// or less than -1800, then the 
-        error *= -1; 							// conjugate angle needs to be generated
-    } else if (error < -1800) { 				// with opposite sign from the original
-        error = 3600 % abs(error); 				// error
+    error = desired_heading - current_heading; // Calculate signed error
+    if (error > 1800) { // If the error is greater than 1800
+        error = 3600 % error; // or less than -1800, then the 
+        error *= -1; // conjugate angle needs to be generated
+    } else if (error < -1800) { // with opposite sign from the original
+        error = 3600 % abs(error); // error
     }
-	//printf("%d\n\r",current_heading);
+    //printf("%d\n\r",current_heading);
     //printf("\t%d\n\r", error); 					// Commented out unless testing
-    servo_PW = compass_gain * error + servo_PW_CENTER; // Update PW based on error
-
-    if (servo_PW > servo_PW_MAX) { 				// check if pulsewidth maximum exceeded
-        servo_PW = servo_PW_MAX; 				// set PW to a maximum value
-    } else if (servo_PW < servo_PW_MIN) { 		// check if less than pulsewidth minimum
-        servo_PW = servo_PW_MIN; 				// set SERVO_PW to a minimum value
+    servo_PW = compass_gain * error + range_adj + servo_PW_CENTER; // Update PW based on error and distance to obstacle
+    if (servo_PW > servo_PW_MAX) { // check if pulsewidth maximum exceeded
+        servo_PW = servo_PW_MAX; // set PW to a maximum value
+    } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
+        servo_PW = servo_PW_MIN; // set SERVO_PW to a minimum value
     }
 }
