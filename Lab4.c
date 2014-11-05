@@ -88,6 +88,7 @@ void main(void) {
     while (c < 50); //wait 1 second in neutral
 	c = 0;
     printf("end wait \r\n");
+	Load_Menu();
 
     //Main Functionality
     while (1) {
@@ -169,20 +170,30 @@ void Check_Menu() {
 
 	if ((menu_input - '0') == 1) {				//If compass gain is selected
 		printf("Please enter a 5 digit gain constant (of the form: xx.xxx) \n\r");
-		keypad_input = kpd_input(0);
+		lcd_clear();
+		lcd_print("Enter a 5 digit gain\nconstant (xx.xxx)");
+		while (read_keypad() != -1);
+		keypad_input = kpd_input(1);
 		compass_gain = keypad_input * 0.001;
+		printf_fast_f("New gain is %f\n\r",compass_gain);
 		Load_Menu();
 	}
 	else if ((menu_input - '0') == 2) {			//If ranger gain is selected
 		printf("Please enter a 5 digit gain constant (of the form: xx.xxx) \n\r");
-		keypad_input = kpd_input(0);
+		lcd_clear();
+		lcd_print("Enter a 5 digit gain\nconstant (xx.xxx)");
+		while (read_keypad() != -1);
+		keypad_input = kpd_input(1);
 		range_gain = keypad_input * 0.001;
+		printf_fast_f("New gain is %f\n\r",range_gain);
 		Load_Menu();
 	}
 	else if ((menu_input - '0') == 3) {			//If desired heading is selected
 		printf("Please choose an option: \n\r");
 		printf("1: 0 degrees\n\r2: 90 degrees\n\r3: 180 degrees\n\r4: 270 degrees\n\r5: Enter a value\n\r");	//Print menu on terminal output
-		lcd_print("1. 0 degrees\n2. 90 degrees\n3. 180 degrees\n4. 270 degrees	5. Enter a value");		//Print menu on 
+		lcd_clear();
+		lcd_print("\n1.0 deg   2.90 deg\n3.180 deg 4.270 deg\n5.Enter a value");		//Print menu on
+		while(read_keypad()!=-1);
 		menu_input = read_keypad();
 		while (menu_input == -1) menu_input = read_keypad();
 		if ((menu_input - '0') == 1) {			//For 0 degrees
@@ -199,9 +210,13 @@ void Check_Menu() {
 		}
 		else if ((menu_input - '0') == 5) {		//For enter own value
 			printf("Please enter a 5 digit compass heading (of the form: 0xxxx) \n\r");
-			keypad_input = kpd_input(0);
+			lcd_clear();
+			lcd_print("\nEnter a 5 digit\nheading (0xxxx)\n\r");
+			while(read_keypad() == -1);
+			keypad_input = kpd_input(1);
 			desired_heading = keypad_input%3600;
 		}
+		printf("New heading is %d\n\r",desired_heading);
 		Load_Menu();
 	}
 }
@@ -211,8 +226,8 @@ void Load_Menu(void){
 	lcd_clear();
 	lcd_print("1. Compass Gain\n");
 	lcd_print("2. Ranger Gain\n");
-	lcd_print("3. Heading Gain\n");
-	lcd_print("R:%dH:%dB:%d\n", range_val, compass_val, voltage);
+	lcd_print("3. Desired Heading\n");
+	lcd_print("R:%3d H:%4d B:%2d\n", range_val, compass_val, (int)voltage);
 }
 
 
