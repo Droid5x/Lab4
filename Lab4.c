@@ -15,7 +15,7 @@
 #define MOTOR_PW_NEUT 2760
 #define R_ADDR 0xE0
 #define C_ADDR 0xC0
-#define SPEED  5//half speed
+#define SPEED  6//half speed
 
 
 //-----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ unsigned int range_val = 0;
 unsigned char Data[2];
 unsigned int motorPW;
 
-float range_gain = 1.0;
+float range_gain = 15;
 unsigned int range_adj;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
@@ -105,7 +105,7 @@ void main(void) {
         if (getRange) {
             getRange = 0; // Reset 80 ms flag
             range_val = read_ranger(); // Read the distance from the ranger
-            //printf("Range:			%d cm \r\n", range_val);
+            printf("Range:			%d cm \r\n", range_val);
             //printf("Pulse Width:	%d \r\n", MOTOR_PW);
 
 
