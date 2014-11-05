@@ -15,6 +15,7 @@
 #define MOTOR_PW_NEUT 2760
 #define R_ADDR 0xE0
 #define C_ADDR 0xC0
+#define SPEED  5//half speed
 
 
 //-----------------------------------------------------------------------------
@@ -59,7 +60,6 @@ unsigned int motorPW;
 
 float range_gain = 1.0;
 unsigned int range_adj;
-unsigned char speed = 0;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
 __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
@@ -124,7 +124,7 @@ void main(void) {
             i2c_write_data(R_ADDR, 0, Data, 1); // write one byte of data to reg 0 at R_ADDR
         }
         if (SS_range) Drive_Motor(0); // Hold the motor in neutral if the slide switch is active
-        else Drive_Motor(speed);
+        else Drive_Motor(SPEED);
 		if (c >= 50){
 			// Print the battery voltage (from AD conversion);
 			voltage = read_AD_input();
