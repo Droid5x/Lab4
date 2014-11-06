@@ -225,11 +225,14 @@ void Check_Menu() {
 
 
 void Load_Menu(void){
+	unsigned int PW_Percent;
 	lcd_clear();
 	lcd_print("1. Compass Gain\n");
 	lcd_print("2. Ranger Gain\n");
 	lcd_print("3. Desired Heading\n");
-	lcd_print("R:%3d H:%4d B:%2d\n", range_val, compass_val, (int)voltage);
+
+	PW_Percent = (servo_PW - servo_PW_CENTER)/((servo_PW_MAX-servo_PW_MIN)/2)*100;
+	lcd_print("R:%3d H:%4d S:%2d B:%2d\n", range_val, compass_val, PW_Percent, (int)voltage);
 }
 
 
