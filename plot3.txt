@@ -1,0 +1,218 @@
+ Starting
+Embedded Control Drive Motor Control
+end wait 
+Please enter a 5 digit gain constant (of the form: xx.xxx) 
+New compass gain is 8
+Please enter a 5 digit gain constant (of the form: xx.xxx) 
+New range gain is 0
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 8  Heading: 892  Steering PW: 2969  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.00
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 9  Heading: 891  Steering PW: 2977  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 16  Heading: 884  Steering PW: 3033  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.13
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 20  Heading: 880  Steering PW: 3065  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 13  Heading: 887  Steering PW: 3009  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.00
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 67  Heading: 833  Steering PW: 3315  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.00
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 69  Heading: 831  Steering PW: 3315  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 67  Heading: 833  Steering PW: 3315  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -4  Heading: 904  Steering PW: 2873  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.13
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -142  Heading: 1042  Steering PW: 2385  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -252  Heading: 1152  Steering PW: 2385  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -303  Heading: 1203  Steering PW: 2385  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -259  Heading: 1159  Steering PW: 2385  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -158  Heading: 1058  Steering PW: 2385  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.88
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -19  Heading: 919  Steering PW: 2753  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.88
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 26  Heading: 874  Steering PW: 3113  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 6  Heading: 894  Steering PW: 2953  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 29  Heading: 871  Steering PW: 3137  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 47  Heading: 853  Steering PW: 3281  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 79  Heading: 821  Steering PW: 3315  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.88
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 104  Heading: 796  Steering PW: 3315  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.88
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 113  Heading: 787  Steering PW: 3315  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 42  Heading: 858  Steering PW: 3241  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.88
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -9  Heading: 909  Steering PW: 2833  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 17  Heading: 883  Steering PW: 3041  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 10  Heading: 890  Steering PW: 2985  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 17  Heading: 883  Steering PW: 3041  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 21  Heading: 879  Steering PW: 3073  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -39  Heading: 939  Steering PW: 2593  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -25  Heading: 925  Steering PW: 2705  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.00
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -23  Heading: 923  Steering PW: 2721  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.88
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -8  Heading: 908  Steering PW: 2841  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.07
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: 2  Heading: 898  Steering PW: 2921  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.94
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -10  Heading: 910  Steering PW: 2825  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 12.00
+Compass Gain: 8 Ranger Gain: 0
+BEGIN DATA POINT
+Error: -2  Heading: 902  Steering PW: 2889  Adjustment: 0
+END DATA POINT
+
+Battery voltage is: 11.82
+passed

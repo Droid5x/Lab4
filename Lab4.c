@@ -15,7 +15,7 @@
 #define MOTOR_PW_NEUT 2760
 #define R_ADDR 0xE0
 #define C_ADDR 0xC0
-#define SPEED  6//half speed
+#define SPEED  8
 
 
 //-----------------------------------------------------------------------------
@@ -47,6 +47,7 @@ unsigned int servo_PW = 2905; // Start PW at center
 
 unsigned int desired_heading = 900; //set initial heading to 90 degrees
 
+signed int compass_error;
 unsigned int compass_val;
 float compass_gain = 0.417;
 float voltage;
@@ -58,7 +59,7 @@ unsigned int range_val = 0;
 unsigned char Data[2];
 unsigned int motorPW;
 
-float range_gain = 15;
+float range_gain = 40;
 unsigned int range_adj;
 
 __sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
@@ -105,20 +106,15 @@ void main(void) {
         if (getRange) {
             getRange = 0; // Reset 80 ms flag
             range_val = read_ranger(); // Read the distance from the ranger
-            printf("Range:			%d cm \r\n", range_val);
-            //printf("Pulse Width:	%d \r\n", MOTOR_PW);
-
-
+           
             // range is the value from the ultrasonic ranger
 
 
             if (range_val > MAX_RANGE) range_adj = 0; //no obstacle in range, no change
             else range_adj = (int) (range_gain * (MAX_RANGE - range_val)); //find adjustment
       
-
             // compass_adj is the compass heading error multiplied by its error gain
             //servo_PW = servo_PW_CENTER + compass_adj + range_adj; //use both to adjust steering
-
 
             // Start a new ping
             Data[0] = 0x51; // write 0x51 to reg 0 of the ranger:
@@ -126,7 +122,13 @@ void main(void) {
         }
         if (SS_range) Drive_Motor(0); // Hold the motor in neutral if the slide switch is active
         else Drive_Motor(SPEED);
-		if (c >= 50){
+		if (c >= 25){
+			//Print Serial Output for data collection
+			printf_fast_f("Compass Gain: %f Ranger Gain: %f\n\r", compass_gain, range_gain);
+			printf("BEGIN DATA POINT\n\r");
+			printf("Error: %d  Heading: %d  Steering PW: %d  Adjustment: %d\n\r", compass_error, compass_val, servo_PW, range_adj);
+			printf("END DATA POINT\n\n\r");
+
 			// Print the battery voltage (from AD conversion);
 			voltage = read_AD_input();
 			voltage /= 256;
@@ -175,7 +177,7 @@ void Check_Menu() {
 		while (read_keypad() != -1);
 		keypad_input = kpd_input(1);
 		compass_gain = keypad_input * 0.001;
-		printf_fast_f("New gain is %f\n\r",compass_gain);
+		printf_fast_f("New compass gain is %f\n\r",compass_gain);
 		Load_Menu();
 	}
 	else if ((menu_input - '0') == 2) {			//If ranger gain is selected
@@ -185,7 +187,7 @@ void Check_Menu() {
 		while (read_keypad() != -1);
 		keypad_input = kpd_input(1);
 		range_gain = keypad_input * 0.001;
-		printf_fast_f("New gain is %f\n\r",range_gain);
+		printf_fast_f("New range gain is %f\n\r",range_gain);
 		Load_Menu();
 	}
 	else if ((menu_input - '0') == 3) {			//If desired heading is selected
@@ -243,8 +245,6 @@ void Load_Menu(void){
 void Drive_Motor(unsigned int input) {
 
     MOTOR_PW = ((MOTOR_PW_MAX - MOTOR_PW_NEUT) / 10) * (input) + MOTOR_PW_NEUT;
-
-    //printf("Pulse Width = %d\r\n",MOTOR_PW);
     motorPW = 0xFFFF - MOTOR_PW;
     PCA0CPL2 = motorPW; // Set High and low byte for motor speed
     PCA0CPH2 = motorPW >> 8;
@@ -393,17 +393,14 @@ void PCA_ISR(void) __interrupt 9 {
 //
 
 void Steering_Servo(unsigned int current_heading) {
-    signed int error = 0;
-    error = desired_heading - current_heading; // Calculate signed error
-    if (error > 1800) { // If the error is greater than 1800
-        error = 3600 % error; // or less than -1800, then the 
-        error *= -1; // conjugate angle needs to be generated
-    } else if (error < -1800) { // with opposite sign from the original
-        error = 3600 % abs(error); // error
+    compass_error = desired_heading - current_heading; // Calculate signed error
+    if (compass_error > 1800) { // If the error is greater than 1800
+        compass_error = 3600 % compass_error; // or less than -1800, then the 
+        compass_error *= -1; // conjugate angle needs to be generated
+    } else if (compass_error < -1800) { // with opposite sign from the original
+        compass_error = 3600 % abs(compass_error); // error
     }
-    //printf("%d\n\r",current_heading);
-    //printf("\t%d\n\r", error); 					// Commented out unless testing
-    servo_PW = compass_gain * error + range_adj + servo_PW_CENTER; // Update PW based on error and distance to obstacle
+    servo_PW = compass_gain * compass_error + range_adj + servo_PW_CENTER; // Update PW based on error and distance to obstacle
     if (servo_PW > servo_PW_MAX) { // check if pulsewidth maximum exceeded
         servo_PW = servo_PW_MAX; // set PW to a maximum value
     } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
