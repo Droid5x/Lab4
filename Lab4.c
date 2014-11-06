@@ -47,6 +47,7 @@ unsigned int servo_PW = 2905; // Start PW at center
 
 unsigned int desired_heading = 900; //set initial heading to 90 degrees
 
+unsigned int compass_error;
 unsigned int compass_val;
 float compass_gain = 0.417;
 float voltage;
@@ -127,6 +128,9 @@ void main(void) {
         if (SS_range) Drive_Motor(0); // Hold the motor in neutral if the slide switch is active
         else Drive_Motor(SPEED);
 		if (c >= 50){
+			//Print Serial Output for data collection
+			printf("Error: %d  Heading: %d  Steering PW: %d  Adjustment: %d", compass_error, compass_val, servo_PW, range_adj);
+
 			// Print the battery voltage (from AD conversion);
 			voltage = read_AD_input();
 			voltage /= 256;
@@ -393,17 +397,16 @@ void PCA_ISR(void) __interrupt 9 {
 //
 
 void Steering_Servo(unsigned int current_heading) {
-    signed int error = 0;
-    error = desired_heading - current_heading; // Calculate signed error
-    if (error > 1800) { // If the error is greater than 1800
-        error = 3600 % error; // or less than -1800, then the 
-        error *= -1; // conjugate angle needs to be generated
-    } else if (error < -1800) { // with opposite sign from the original
-        error = 3600 % abs(error); // error
+    compass_error = desired_heading - current_heading; // Calculate signed error
+    if (compass_error > 1800) { // If the error is greater than 1800
+        compass_error = 3600 % compass_error; // or less than -1800, then the 
+        compass_error *= -1; // conjugate angle needs to be generated
+    } else if (compass_error < -1800) { // with opposite sign from the original
+        compass_error = 3600 % abs(compass_error); // error
     }
     //printf("%d\n\r",current_heading);
     //printf("\t%d\n\r", error); 					// Commented out unless testing
-    servo_PW = compass_gain * error + range_adj + servo_PW_CENTER; // Update PW based on error and distance to obstacle
+    servo_PW = compass_gain * compass_error + range_adj + servo_PW_CENTER; // Update PW based on error and distance to obstacle
     if (servo_PW > servo_PW_MAX) { // check if pulsewidth maximum exceeded
         servo_PW = servo_PW_MAX; // set PW to a maximum value
     } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
