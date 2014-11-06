@@ -226,8 +226,8 @@ void Load_Menu(void){
 	lcd_print("2. Ranger Gain\n");
 	lcd_print("3. Desired Heading\n");
 
-	PW_Percent = (servo_PW - servo_PW_CENTER)/((servo_PW_MAX-servo_PW_MIN)/2)*100;
-	lcd_print("R:%3d H:%4d S:%2d B:%2d\n", range_val, compass_val, PW_Percent, (int)voltage);
+	PW_Percent = (abs(servo_PW - servo_PW_CENTER)*200.0)/((servo_PW_MAX-servo_PW_MIN));
+	lcd_print("R:%3dH:%4dS:%2dB:%2d\n", range_val, compass_val, PW_Percent, (int)voltage);
 }
 
 
