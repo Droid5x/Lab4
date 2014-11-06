@@ -40,30 +40,29 @@ void Load_Menu(void);
 //-----------------------------------------------------------------------------
 unsigned char interrupts;
 unsigned char take_heading;
-unsigned int servo_PW_CENTER = 2905; // Center PW value
-unsigned int servo_PW_MIN = 2385; // Minimum left PW value
-unsigned int servo_PW_MAX = 3315; // Maximum right PW value
-unsigned int servo_PW = 2905; // Start PW at center
+unsigned int servo_PW_CENTER = 2905; 	// Center PW value
+unsigned int servo_PW_MIN = 2385; 		// Minimum left PW value
+unsigned int servo_PW_MAX = 3315; 		// Maximum right PW value
+unsigned int servo_PW = 2905; 			// Start PW at center
 
-unsigned int desired_heading = 900; //set initial heading to 90 degrees
+unsigned int desired_heading = 900; 	// Set initial heading to 90 degrees
 
-signed int compass_error;
-unsigned int compass_val;
-float compass_gain = 0.417;
-float voltage;
+signed int compass_error;				// Global variable for compass error
+unsigned int compass_val;				// Current heading
+float compass_gain = 0.417;				// Compass gain setting
+float voltage;							// Global voltage variable for checking battery voltage
 
-unsigned int MOTOR_PW = 0;
-unsigned int c = 0;
-unsigned char getRange = 1;
-unsigned int range_val = 0;
-unsigned char Data[2];
-unsigned int motorPW;
+unsigned int MOTOR_PW = 0;				// Motor Pulsewidth to control motor speed
+unsigned int c = 0;						// Counter for printing data at regular intervals
+unsigned char getRange = 1;				// Boolean flag to tell when safe to take ranger value
+unsigned int range_val = 0;				// Range value in cm
+unsigned char Data[2];					// Array for sending and receiving from ranger
 
-float range_gain = 40;
-unsigned int range_adj;
+float range_gain = 40;					// Ranger gain
+unsigned int range_adj;					// Range adjustment
 
-__sbit __at 0xB6 SS_range; // Assign P3.6 to SS (Slide Switch)
-__sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
+__sbit __at 0xB6 SS_range; 				// Assign P3.6 to SS (Slide Switch)
+__sbit __at 0xB7 SS_steer; 				// Slide switch input pin at P3.7
 
 //-----------------------------------------------------------------------------
 // Main Function
@@ -72,7 +71,7 @@ __sbit __at 0xB7 SS_steer; // Slide switch input pin at P3.7
 void main(void) {
     // initialize board
     Sys_Init();
-    putchar(' '); //the quotes in this line may not format correctly
+    putchar(' '); 						//the quotes in this line may not format correctly
     Port_Init();
     PCA_Init();
     SMB_Init();
@@ -95,26 +94,23 @@ void main(void) {
     while (1) {
         if (SS_steer) { // If the slide switch is active, set PW to center
             servo_PW = servo_PW_CENTER;
-            PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
-        } else if (take_heading) { // Otherwise take a new heading
+            PCA0CP0 = 0xFFFF - servo_PW; 	// Update comparator with new PW value
+        } else if (take_heading) { 			// Otherwise take a new heading
 			compass_val = Read_Compass();
-            Steering_Servo(compass_val); // Change PW based on current heading
-            PCA0CP0 = 0xFFFF - servo_PW; // Update comparator with new PW value
+            Steering_Servo(compass_val); 	// Change PW based on current heading
+            PCA0CP0 = 0xFFFF - servo_PW; 	// Update comparator with new PW value
         }
 
 
         if (getRange) {
-            getRange = 0; // Reset 80 ms flag
-            range_val = read_ranger(); // Read the distance from the ranger
+            getRange = 0; 					// Reset 80 ms flag
+            range_val = read_ranger(); 		// Read the distance from the ranger
            
             // range is the value from the ultrasonic ranger
 
 
-            if (range_val > MAX_RANGE) range_adj = 0; //no obstacle in range, no change
-            else range_adj = (int) (range_gain * (MAX_RANGE - range_val)); //find adjustment
-      
-            // compass_adj is the compass heading error multiplied by its error gain
-            //servo_PW = servo_PW_CENTER + compass_adj + range_adj; //use both to adjust steering
+            if (range_val > MAX_RANGE) range_adj = 0; // No obstacle in range, no change
+            else range_adj = (int) (range_gain * (MAX_RANGE - range_val)); // Find adjustment
 
             // Start a new ping
             Data[0] = 0x51; // write 0x51 to reg 0 of the ranger:
@@ -156,13 +152,12 @@ void main(void) {
 //
 
 unsigned int Read_Compass() {
-    unsigned char c_Data[2]; 	// c_Data array to store heading data
-    unsigned int heading; 		// Variable to store heading data
-    i2c_read_data(C_ADDR, 2, c_Data, 2); // Read data from compass registers, store it in c_Data buffer
-    heading = (((unsigned int) c_Data[0] << 8) | c_Data[1]); //Take high c_data byte, convert to int, 
-    //shift left 8 bits, and copy lower compass byte to first half of int
+    unsigned char c_Data[2]; 				// c_Data array to store heading data
+    unsigned int heading; 					// Variable to store heading data
+    i2c_read_data(C_ADDR, 2, c_Data, 2); 	// Read data from compass registers, store it in c_Data buffer
+    heading = (((unsigned int) c_Data[0] << 8) | c_Data[1]); //Take high and low c_data bytes, convert to int
     take_heading = 0;
-    return heading; // Return C_Data heading between 0 and 3599 
+    return heading; 						// Return C_Data heading between 0 and 3599 
 }
 
 
@@ -245,9 +240,7 @@ void Load_Menu(void){
 void Drive_Motor(unsigned int input) {
 
     MOTOR_PW = ((MOTOR_PW_MAX - MOTOR_PW_NEUT) / 10) * (input) + MOTOR_PW_NEUT;
-    motorPW = 0xFFFF - MOTOR_PW;
-    PCA0CPL2 = motorPW; // Set High and low byte for motor speed
-    PCA0CPH2 = motorPW >> 8;
+	PCA0CP2 = 0xFFFF - MOTOR_PW; // Set High and low byte for motor speed
 }
 
 //-----------------------------------------------------------------------------
@@ -297,10 +290,10 @@ void Port_Init() {
 //
 
 void ADC_Init(void) {
-    REF0CN = 0x03; // Use internal reference voltage (2.4V)
-    ADC1CN = 0x80; // Enable A/D conversion
-    ADC1CF &= 0xFC; // Reset last two bits to 0
-    ADC1CF |= 0x01; // Gain set to 1.0
+    REF0CN = 0x03; 		// Use internal reference voltage (2.4V)
+    ADC1CN = 0x80; 		// Enable A/D conversion
+    ADC1CF &= 0xFC; 	// Reset last two bits to 0
+    ADC1CF |= 0x01; 	// Gain set to 1.0
 }
 
 //-----------------------------------------------------------------------------j'
@@ -311,13 +304,13 @@ void ADC_Init(void) {
 //
 
 unsigned char read_AD_input(void) {
-    AMX1SL = 7; // Set pin 7 as the analog input
-    ADC1CN &= ~0x20; // Clear 'conversion complete' flag
-    ADC1CN |= 0x10; // Initiate A/D conversion
+    AMX1SL = 7; 		// Set pin 7 as the analog input
+    ADC1CN &= ~0x20; 	// Clear 'conversion complete' flag
+    ADC1CN |= 0x10; 	// Initiate A/D conversion
 
     while ((ADC1CN & 0x20) == 0x00); // Wait for conversion to complete
 
-    return ADC1; // Return digital conversion value
+    return ADC1; 		// Return digital conversion value
 }
 
 //-----------------------------------------------------------------------------
@@ -328,11 +321,11 @@ unsigned char read_AD_input(void) {
 //
 
 void PCA_Init(void) {
-    PCA0MD = 0x81; // enable CF interrupt, use SYSCLK/12
+    PCA0MD = 0x81; 		// enable CF interrupt, use SYSCLK/12
 
-    PCA0CN = 0x40; // enable PCA0 counter
-    PCA0CPM2 = 0xC2; // select 16bit PWM, enable positive edge capture, enable pulse width modulation(ranger)
-    PCA0CPM0 = 0xC2; // select 16bit PWM, enable positive edge capture, enable pulse width modulation(compass)
+    PCA0CN = 0x40; 		// enable PCA0 counter
+    PCA0CPM2 = 0xC2;	// select 16bit PWM, enable positive edge capture, enable pulse width modulation(ranger)
+    PCA0CPM0 = 0xC2; 	// select 16bit PWM, enable positive edge capture, enable pulse width modulation(compass)
 }
 
 //-----------------------------------------------------------------------------
@@ -344,8 +337,8 @@ void PCA_Init(void) {
 
 void Interrupt_Init(void) {
 
-    EIE1 |= 0x08; //Enable PCA0 Interrupt (bit 3) 
-    EA = 1; //Enable global interrupts
+    EIE1 |= 0x08; 	//Enable PCA0 Interrupt (bit 3) 
+    EA = 1; 		//Enable global interrupts
 
 }
 
@@ -357,8 +350,8 @@ void Interrupt_Init(void) {
 //
 
 void SMB_Init(void) {
-    SMB0CR = 0x93; //Configure SCL frequency to 100kHz
-    ENSMB = 1; // Enable SMBus
+    SMB0CR = 0x93; 		//Configure SCL frequency to 100kHz
+    ENSMB = 1; 			// Enable SMBus
 }
 
 
@@ -371,20 +364,20 @@ void SMB_Init(void) {
 //
 
 void PCA_ISR(void) __interrupt 9 {
-    if (CF) { //If an interrupt has occured
+    if (CF) { 					// If an interrupt has occured
         interrupts++;
-        c++; // counter for initial wait to initialize motor
+        c++; 					// Counter for initial wait to initialize motor
 		if (interrupts % 2 == 0) {
-       		take_heading = 1; //It is appropriate to take a reading
+       		take_heading = 1; 	// It is appropriate to take a reading
         }
         if (interrupts >= 4) {
-            getRange = 1; // 80ms flag
-			interrupts = 0; // Reset counter
+            getRange = 1; 		// 80ms flag
+			interrupts = 0;		// Reset counter
         }
-        CF = 0; //Clear Interrupt Flag
-        PCA0 = 28672; //Jump timer ahead for given period
+        CF = 0; 				// Clear Interrupt Flag
+        PCA0 = 28672; 			// Jump timer ahead for given period
     }
-    PCA0CN &= 0xC0; // Handle other PCA interrupts
+    PCA0CN &= 0xC0; 			// Handle other PCA interrupts
 }
 
 //-----------------------------------------------------------------------------
@@ -393,17 +386,17 @@ void PCA_ISR(void) __interrupt 9 {
 //
 
 void Steering_Servo(unsigned int current_heading) {
-    compass_error = desired_heading - current_heading; // Calculate signed error
-    if (compass_error > 1800) { // If the error is greater than 1800
-        compass_error = 3600 % compass_error; // or less than -1800, then the 
-        compass_error *= -1; // conjugate angle needs to be generated
-    } else if (compass_error < -1800) { // with opposite sign from the original
-        compass_error = 3600 % abs(compass_error); // error
+    compass_error = desired_heading - current_heading; 			// Calculate signed error
+    if (compass_error > 1800) { 								// If the error is greater than 1800
+        compass_error = 3600 % compass_error; 					// or less than -1800, then the 
+        compass_error *= -1; 									// conjugate angle needs to be generated
+    } else if (compass_error < -1800) { 						// with opposite sign from the original
+        compass_error = 3600 % abs(compass_error); 				// error
     }
     servo_PW = compass_gain * compass_error + range_adj + servo_PW_CENTER; // Update PW based on error and distance to obstacle
-    if (servo_PW > servo_PW_MAX) { // check if pulsewidth maximum exceeded
-        servo_PW = servo_PW_MAX; // set PW to a maximum value
-    } else if (servo_PW < servo_PW_MIN) { // check if less than pulsewidth minimum
-        servo_PW = servo_PW_MIN; // set SERVO_PW to a minimum value
+    if (servo_PW > servo_PW_MAX) { 								// Check if pulsewidth maximum exceeded
+        servo_PW = servo_PW_MAX; 								// Set PW to a maximum value
+    } else if (servo_PW < servo_PW_MIN) { 						// Check if less than pulsewidth minimum
+        servo_PW = servo_PW_MIN; 								// Set SERVO_PW to a minimum value
     }
 }
