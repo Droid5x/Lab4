@@ -1,68 +1,105 @@
 Mark Blanco
 Brad Jewett
+Side B Seat 27
 Aaron Clippinger
 Lance Gerday
 Litec Section 02
-Side B Seat 27
+Side A Seat 5
 Lab 4 Pseudocode
 (Use sensor readings from compass to update steering servo angle)
 
-#import necessary header files
+#include necessary header files
+#define constants
+Function Prototypes
 initialize necessary counters and other global variables
-unsigned int desired_heading = 900
-corrective_factor  = 0.417  	// Proportionality constant for Steering_Servo calculations 
+Set initial values for heading and gains
+calculations 
 pw_center = 2905
 pw_min = 2385
 pw_max = 3315
 
 main()
-	run default setup for c8051
-	run init functions for hardware (timer, pwm, etc)
-	wait to set nutral for motor
-	while(true)
-		if  steering slide switch is active:
-			pw = center_pw		// Update current pulse width value to center
-			update CCM registers to reflect new pwm value
-		else if 40 milliseconds have passed:
-			reset the counter
-			call and store readCompass()
-			display heading on lcd display
-			Steering_Servo(heading)	// Update servo position based on current heading
-			update CCM registers to reflect new pwm value
-		if ranging slide switch is active:
-			motor nutral
-		else:
-			set motor with Drive_Motor() to value from read_ranger()
-			
-		if keys pressed on keypad:
-			begin reading key presses and update settings as needed
-		read battery level and display to LCD using ADC
-		
+    run default setup for c8051
+    run init functions for hardware (timer, pwm, etc)
+    wait to set nuetral for motor
+    while(1)
+        if  steering slide switch is active:
+            Update current steering pulse width value to center
+            update CCM registers to reflect new pwm value
+        else if 40 milliseconds have passed:
+            reset the counter
+            call and store readCompass() as current heading
+            display heading on lcd display
+            Update Steering_Servo with current heading    
+            update CCM registers to reflect new pwm value
+        if 80 milliseconds have passed
+	    reset 80ms flag
+	    take a reading from read_ranger()
+	    if the range is greater than 60cm, ignore the reading
+	    else range steering adjustment equals range gain *(MAX RANGE - reading)
 
+	    Start a new ranger ping
+	if ranging slide switch is active:
+            motor nuetral
+        else:
+            set motor with Drive_Motor() to specified SPEED
+        Print battery voltage every second using A/D Conversion
+	while both slide switchs are off
+	    center steering and stop drive motor
+	    Check_Menu() every 100ms
+        if keys pressed on keypad:
+            begin reading key presses and update settings as needed
+        read battery level and display to LCD using ADC
+//----------------------------------------------------------------------------
 Steering_Servo(current_heading)
 error = desired_heading - current_heading
-if error is greater than 1800:			// Corrections to base algorithm to ensure 
-	error  =  -( 3600 % error )			// most efficient corrective direction and 
-else if error is less than -1800:			// magnitude
-	error = 3600 % abs(error)
+if error is greater than 1800:            // Corrections to base algorithm to ensure 
+    error  =  -( 3600 % error )            // most efficient corrective direction and 
+else if error is less than -1800:            // magnitude
+    error = 3600 % abs(error)
 temp_pw = corrective_factor*error + center_pw
 make sure temp_pw is between pw_min and pw_max (correct if needed)
-set pw = temp_pw		// Update pw to new pw value
-
-readCompass()		// return compass heading as unsigned integer
+set pw = temp_pw        // Update pw to new pw value
+//----------------------------------------------------------------------------
+readCompass()        // return compass heading as unsigned integer
 read heading from compass (two bytes of data)
 return unsigned int containing the two bytes combined
-
-find_range()
-	get range from rangefinder
-	return range
-
-Timer_ISR()
-	increment count and apply any needed timer operations such as setting 40 millisecond flag to high
-
-
-Drive_Motor()//run motor
-
-read_ranger()// find distance from car
-	
+//----------------------------------------------------------------------------
+Load_Menu()
+    Displays menu on LCD display
+    1. Compass Gain
+    2. Ranger Gain
+    3. Desired Heading
+    Print current values of range, current heading, and battery voltage
+//----------------------------------------------------------------------------
+Check_Menu()
+    if '1' is pressed
+	request a 5 digit value for compass gain
+	multiply value by 0.001
+    if '2' is pressed
+	request a 5 digit value for ranger gain
+	multiply value by 0.001
+    if '3' is pressed
+	Display Heading selection menu
+	wait for all buttons to be released
+	1. 0 degrees
+	2. 90 degrees
+	3. 180 degrees
+	4. 270 degrees
+	5. Enter Heading
+	if '5' is pressed
+	    Request a 4 digit value for heading
+//----------------------------------------------------------------------------
+Drive_Motor()
+    Map value from 0 to 10 to nuetral to maximum
+    Set high and low byte of CEX2 for motor speed
+//----------------------------------------------------------------------------
+PCA_ISR()
+    Set initial PCA0 value for a 20ms period
+    increment counters to take heading, get range, etc.
+    Clear overflow flag
+//----------------------------------------------------------------------------
+read_ranger()
+    Read two bytes from the ranger
+    return the range as an integer
 
