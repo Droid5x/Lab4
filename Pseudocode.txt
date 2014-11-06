@@ -1,9 +1,10 @@
 Mark Blanco
 Brad Jewett
+Side B Seat 27
 Aaron Clippinger
 Lance Gerday
 Litec Section 02
-Side B Seat 27
+Side A Seat 5
 Lab 4 Pseudocode
 (Use sensor readings from compass to update steering servo angle)
 
