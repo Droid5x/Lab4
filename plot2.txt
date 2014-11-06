@@ -212,3 +212,4 @@ Error: 45  Heading: 855  Steering PW: 2995  Adjustment: 0
 END DATA POINT
 
 Battery voltage is: 12.19
+failed

@@ -215,3 +215,4 @@ Error: -2  Heading: 902  Steering PW: 2889  Adjustment: 0
 END DATA POINT
 
 Battery voltage is: 11.82
+passed

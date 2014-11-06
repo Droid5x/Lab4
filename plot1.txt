@@ -146,3 +146,4 @@ Error: 216  Heading: 684  Steering PW: 2948  Adjustment: 0
 END DATA POINT
 
 Battery voltage is: 12.25
+failed
