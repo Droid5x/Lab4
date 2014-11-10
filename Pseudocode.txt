@@ -52,18 +52,18 @@ main()
         read battery level and display to LCD using ADC
 //----------------------------------------------------------------------------
 Steering_Servo(current_heading)
-error = desired_heading - current_heading
-if error is greater than 1800:            // Corrections to base algorithm to ensure 
-    error  =  -( 3600 % error )            // most efficient corrective direction and 
-else if error is less than -1800:            // magnitude
-    error = 3600 % abs(error)
-temp_pw = corrective_factor*error + center_pw
-make sure temp_pw is between pw_min and pw_max (correct if needed)
-set pw = temp_pw        // Update pw to new pw value
+    error = desired_heading - current_heading
+    if error is greater than 1800:            // Corrections to base algorithm to ensure 
+        error  =  -( 3600 % error )           // most efficient corrective direction and 
+    else if error is less than -1800:         // magnitude
+        error = 3600 % abs(error)
+    temp_pw = corrective_factor*error + center_pw
+    make sure temp_pw is between pw_min and pw_max (correct if needed)
+    set pw = temp_pw        // Update pw to new pw value
 //----------------------------------------------------------------------------
 readCompass()        // return compass heading as unsigned integer
-read heading from compass (two bytes of data)
-return unsigned int containing the two bytes combined
+    read heading from compass (two bytes of data)
+    return unsigned int containing the two bytes combined
 //----------------------------------------------------------------------------
 Load_Menu()
     Displays menu on LCD display
