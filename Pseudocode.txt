@@ -3,63 +3,63 @@ Brad Jewett
 Side B Seat 27
 Aaron Clippinger
 Lance Gerday
-Litec Section 02
 Side A Seat 5
+Litec Section 02
 Lab 4 Pseudocode
 (Use sensor readings from compass to update steering servo angle)
 
 #include necessary header files
 #define constants
 Function Prototypes
-initialize necessary counters and other global variables
-Set initial values for heading and gains
-calculations 
-pw_center = 2905
-pw_min = 2385
-pw_max = 3315
+initialize global variables (constants, data storage, gains, etc)
+initialize sbits for servo slide switch and motor slide switch
 
 main()
     run default setup for c8051
     run init functions for hardware (timer, pwm, etc)
-    wait to set nuetral for motor
+    start motor in neutral and wait 1 second
+    load the lcd options menu
     while(1)
-        if  steering slide switch is active:
-            Update current steering pulse width value to center
+        if steering slide switch is active:
+            set steering pulse width value to center
             update CCM registers to reflect new pwm value
         else if 40 milliseconds have passed:
             reset the counter
             call and store readCompass() as current heading
-            display heading on lcd display
-            Update Steering_Servo with current heading    
+            call Steering_Servo() with current heading as argument  
             update CCM registers to reflect new pwm value
-        if 80 milliseconds have passed
-	    reset 80ms flag
-	    take a reading from read_ranger()
-	    if the range is greater than 60cm, ignore the reading
-	    else range steering adjustment equals range gain *(MAX RANGE - reading)
-
-	    Start a new ranger ping
+        if 80 milliseconds have passed:
+	       reset 80ms flag
+	       store a reading from read_ranger()
+	       if the range is greater than 60cm:
+                ignore the reading
+	       else:
+                range steering adjustment equals range_gain *(MAX RANGE - reading)
 	if ranging slide switch is active:
-            motor nuetral
-        else:
-            set motor with Drive_Motor() to specified SPEED
-        Print battery voltage every second using A/D Conversion
-	while both slide switchs are off
+        set motor speed to neutral
+    else:
+        set motor with Drive_Motor() to defined SPEED
+    if half a second has passed:
+        measure battery voltage using A/D Conversion
+        print data points to serial connection
+        reload the lcd menu to update values
+        reset counter
+	while both slide switches are inactive:
 	    center steering and stop drive motor
 	    Check_Menu() every 100ms
         if keys pressed on keypad:
             begin reading key presses and update settings as needed
-        read battery level and display to LCD using ADC
 //----------------------------------------------------------------------------
 Steering_Servo(current_heading)
     error = desired_heading - current_heading
-    if error is greater than 1800:            // Corrections to base algorithm to ensure 
-        error  =  -( 3600 % error )           // most efficient corrective direction and 
+    if error is greater than 1800:            // Corrections to base algorithm 
+        error  =  -( 3600 % error )           // to ensure most efficient
+                                              // corrective direction and 
     else if error is less than -1800:         // magnitude
         error = 3600 % abs(error)
-    temp_pw = corrective_factor*error + center_pw
+    temp_pw = corrective_factor*error + ranger_adjustment + center_pw
     make sure temp_pw is between pw_min and pw_max (correct if needed)
-    set pw = temp_pw        // Update pw to new pw value
+    set pw = temp_pw                          // Update pw to new pw value
 //----------------------------------------------------------------------------
 readCompass()        // return compass heading as unsigned integer
     read heading from compass (two bytes of data)
@@ -73,21 +73,21 @@ Load_Menu()
     Print current values of range, current heading, and battery voltage
 //----------------------------------------------------------------------------
 Check_Menu()
-    if '1' is pressed
-	request a 5 digit value for compass gain
-	multiply value by 0.001
-    if '2' is pressed
-	request a 5 digit value for ranger gain
-	multiply value by 0.001
-    if '3' is pressed
-	Display Heading selection menu
-	wait for all buttons to be released
-	1. 0 degrees
-	2. 90 degrees
-	3. 180 degrees
-	4. 270 degrees
-	5. Enter Heading
-	if '5' is pressed
+    if '1' is pressed:
+	   request a 5 digit value for compass gain
+	   multiply value by 0.001
+    if '2' is pressed:
+	   request a 5 digit value for ranger gain
+	   multiply value by 0.001
+    if '3' is pressed:
+	   Display Heading selection menu
+	   wait for all buttons to be released
+	   1. 0 degrees
+	   2. 90 degrees
+	   3. 180 degrees
+	   4. 270 degrees
+	   5. Enter Heading
+	if '5' is pressed:
 	    Request a 4 digit value for heading
 //----------------------------------------------------------------------------
 Drive_Motor()
@@ -102,4 +102,3 @@ PCA_ISR()
 read_ranger()
     Read two bytes from the ranger
     return the range as an integer
-
